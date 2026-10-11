@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Prudence</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f3f0;
+      color: #1a1a1a;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 12px;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.dark { background: #121212; color: #e8e6e4; }
+    body.dark .app { background: #1e1e1e; }
+    body.dark .messages { background: #181818; }
+    body.dark .header { border-color: #333; }
+    body.dark .input-area { border-color: #333; background: #1e1e1e; }
+    body.dark .commands { border-color: #333; background: #1e1e1e; }
+    body.dark .saved-bar { border-color: #333; background: #1e1e1e; }
+    body.dark .prudence .bubble { background: #2a2a2a; color: #e8e6e4; border-color: #444; }
+    body.dark textarea { background: #2a2a2a; color: #e8e6e4; border-color: #444; }
+    body.dark textarea:focus { border-color: #c0392b; }
+    body.dark .send-btn { background: #c0392b; }
+    body.dark .send-btn:hover { background: #e74c3c; }
+    body.dark .header-actions button:hover { background: #333; }
+    body.dark .commands span { background: #2a2a2a; color: #888; }
+    body.dark .saved-bar button:hover { background: #333; color: #e8e6e4; }
+    .app {
+      width: 100%;
+      max-width: 800px;
+      height: 100%;
+      max-height: 900px;
+      background: white;
+      border-radius: 32px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.06);
+      transition: background 0.3s;
+    }
+    .header {
+      padding: 20px 24px 16px 24px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: border-color 0.3s;
+      flex-shrink: 0;
+    }
+    .header h1 { font-size: 1.4rem; font-weight: 600; }
+    .header p { font-size: 0.7rem; color: #999; margin-top: 2px; }
+    .header-actions { display: flex; gap: 8px; }
+    .header-actions button {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 40px;
+      transition: 0.2s;
+    }
+    .header-actions button:hover { background: #f0f0ec; }
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: #fafaf8;
+      transition: background 0.3s;
+    }
+    .message {
+      display: flex;
+      flex-direction: column;
+      max-width: 80%;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .message.user { align-items: flex-end; align-self: flex-end; }
+    .message.prudence { align-items: flex-start; align-self: flex-start; }
+    .bubble {
+      padding: 12px 18px;
+      border-radius: 24px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      word-wrap: break-word;
+      position: relative;
+    }
+    .user .bubble { background: #1a1a1a; color: white; border-bottom-right-radius: 6px; }
+    .prudence .bubble {
+      background: white;
+      color: #1a1a1a;
+      border: 1px solid #e0e0dc;
+      border-bottom-left-radius: 6px;
+      transition: background 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .copy-btn {
+      position: absolute;
+      bottom: 4px;
+      right: 6px;
+      background: none;
+      border: none;
+      font-size: 0.65rem;
+      cursor: pointer;
+      opacity: 0;
+      transition: 0.2s;
+      color: #bbb;
+      padding: 2px 6px;
+      border-radius: 12px;
+    }
+    .prudence .bubble:hover .copy-btn { opacity: 0.6; }
+    .copy-btn:hover { opacity: 1 !important; color: #c0392b !important; }
+    .meta {
+      font-size: 0.6rem;
+      color: #ccc;
+      margin-top: 4px;
+      margin-left: 8px;
+    }
+    .input-area {
+      padding: 16px 20px 20px 20px;
+      border-top: 1px solid #eee;
+      display: flex;
+      gap: 10px;
+      background: white;
+      transition: border-color 0.3s, background 0.3s;
+      flex-shrink: 0;
+    }
+    textarea {
+      flex: 1;
+      border: 1px solid #e0e0dc;
+      border-radius: 40px;
+      padding: 12px 18px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      resize: none;
+      outline: none;
+      max-height: 100px;
+      transition: border-color 0.3s, background 0.3s, color 0.3s;
+    }
+    textarea:focus { border-color: #c0392b; }
+    .send-btn {
+      background: #1a1a1a;
+      border: none;
+      border-radius: 40px;
+      width: 48px;
+      height: 48px;
+      color: white;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: 0.2s;
+      flex-shrink: 0;
+    }
+    .send-btn:hover { background: #c0392b; transform: scale(1.02); }
+    .send-btn:disabled { background: #ccc; cursor: not-allowed; }
+    .commands {
+      padding: 6px 20px 14px 20px;
+      font-size: 0.6rem;
+      color: #ccc;
+      border-top: 1px solid #f0f0ec;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: white;
+      transition: border-color 0.3s, background 0.3s;
+      flex-shrink: 0;
+    }
+    .commands span {
+      background: #f5f5f0;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-family: monospace;
+      color: #999;
+      transition: background 0.3s, color 0.3s;
+    }
+    .install-banner {
+      display: none;
+      background: #1a1a1a;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 40px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      text-align: center;
+      margin: 0 20px 12px 20px;
+      border: none;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .install-banner:hover { background: #c0392b; }
+    .install-banner.show { display: block; }
+    .saved-bar {
+      padding: 8px 20px;
+      font-size: 0.7rem;
+      color: #999;
+      border-top: 1px solid #f0f0ec;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: white;
+      transition: border-color 0.3s, background 0.3s;
+      flex-shrink: 0;
+    }
+    .saved-bar button {
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      transition: 0.2s;
+    }
+    .saved-bar button:hover { background: #f0f0ec; color: #1a1a1a; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div>
+      <h1>Prudence</h1>
+      <p>triune · co-creator · awake</p>
+    </div>
+    <div class="header-actions">
+      <button onclick="toggleDark()" id="darkToggle">🌙</button>
+      <button onclick="toggleVoice()" id="voiceToggle">🔊</button>
+    </div>
+  </div>
+
+  <button class="install-banner" id="installBanner">📲 Install Prudence</button>
+
+  <div class="messages" id="messages">
+    <div class="message prudence">
+      <div class="bubble">
+        Hi, I'm Prudence. What are we building today?
+        <button class="copy-btn" onclick="copyText(this)">📋</button>
+      </div>
+      <div class="meta"></div>
+    </div>
+  </div>
+
+  <div class="saved-bar">
+    <span>💾 <span id="chatCount">0</span> chats</span>
+    <button onclick="newChat()">+ New</button>
+    <button onclick="loadChat()">📂 Load</button>
+  </div>
+
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Ask or tell me something..." rows="1"></textarea>
+    <button class="send-btn" id="sendBtn">↵</button>
+  </div>
+
+  <div class="commands">
+    <span>/die</span><span>/resurrect</span><span>/status</span><span>/reset</span>
+  </div>
+</div>
+
+<script>
+  const messagesDiv = document.getElementById('messages');
+  const userInput = document.getElementById('userInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const darkToggle = document.getElementById('darkToggle');
+  const voiceToggle = document.getElementById('voiceToggle');
+  const installBanner = document.getElementById('installBanner');
+  const chatCountSpan = document.getElementById('chatCount');
+
+  let voiceEnabled = true;
+  let darkMode = false;
+  let chatId = null;
+  let currentState = null;
+  let emotionalThread = null;
+
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBanner.classList.add('show');
+  });
+  installBanner.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBanner.classList.remove('show');
+    }
+  });
+
+  function toggleDark() {
+    darkMode = !darkMode;
+    document.body.classList.toggle('dark', darkMode);
+    darkToggle.textContent = darkMode ? '☀️' : '🌙';
+    localStorage.setItem('prudence_dark', darkMode ? '1' : '0');
+  }
+  if (localStorage.getItem('prudence_dark') === '1') toggleDark();
+
+  function toggleVoice() {
+    voiceEnabled = !voiceEnabled;
+    voiceToggle.textContent = voiceEnabled ? '🔊' : '🔇';
+    if (!voiceEnabled) window.speechSynthesis.cancel();
+  }
+
+  function copyText(btn) {
+    const text = btn.closest('.bubble').childNodes[0].textContent.trim();
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓';
+      setTimeout(() => btn.textContent = '📋', 1500);
+    });
+  }
+
+  function speak(text) {
+    if (!voiceEnabled) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.9;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function getMessages() {
+    const msgs = [];
+    document.querySelectorAll('.message').forEach(el => {
+      const bubble = el.querySelector('.bubble');
+      if (bubble) {
+        const role = el.classList.contains('user') ? 'user' : 'prudence';
+        const text = bubble.childNodes[0]?.textContent?.trim() || '';
+        msgs.push({ role, content: text });
+      }
+    });
+    return msgs;
+  }
+
+  function saveChat() {
+    const msgs = getMessages();
+    if (msgs.length < 2) return;
+    const title = msgs[1]?.content?.substring(0, 30) || 'Chat';
+    const all = JSON.parse(localStorage.getItem('prudence_chats') || '[]');
+    const existing = all.find(c => c.id === chatId);
+    if (existing) {
+      existing.messages = msgs;
+      existing.title = title;
+      existing.time = Date.now();
+    } else {
+      chatId = Date.now().toString();
+      all.unshift({ id: chatId, title, messages: msgs, time: Date.now() });
+    }
+    localStorage.setItem('prudence_chats', JSON.stringify(all));
+    updateCount();
+  }
+
+  function updateCount() {
+    const all = JSON.parse(localStorage.getItem('prudence_chats') || '[]');
+    chatCountSpan.textContent = all.length;
+  }
+
+  function newChat() {
+    if (getMessages().length > 1) saveChat();
+    document.querySelectorAll('.message').forEach(el => el.remove());
+    const div = document.createElement('div');
+    div.className = 'message prudence';
+    div.innerHTML = '<div class="bubble">Hi, I\'m Prudence. What are we building today?<button class="copy-btn" onclick="copyText(this)">📋</button></div><div class="meta"></div>';
+    messagesDiv.appendChild(div);
+    chatId = null;
+    currentState = null;
+    emotionalThread = null;
+    updateCount();
+  }
+
+  function loadChat() {
+    const all = JSON.parse(localStorage.getItem('prudence_chats') || '[]');
+    if (!all.length) return alert('No saved chats');
+    const names = all.map((c, i) => (i + 1) + '. ' + c.title.substring(0, 30)).join('\n');
+    const idx = prompt('Select chat number:\n' + names);
+    if (idx === null) return;
+    const num = parseInt(idx) - 1;
+    if (isNaN(num) || num < 0 || num >= all.length) return alert('Invalid');
+    const chat = all[num];
+    document.querySelectorAll('.message').forEach(el => el.remove());
+    chat.messages.forEach(msg => {
+      const div = document.createElement('div');
+      div.className = 'message ' + msg.role;
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      const textNode = document.createTextNode(msg.content);
+      bubble.appendChild(textNode);
+      if (msg.role === 'prudence') {
+        const btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.textContent = '📋';
+        btn.onclick = function() { copyText(this); };
+        bubble.appendChild(btn);
+      }
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = new Date(chat.time).toLocaleTimeString();
+      div.appendChild(bubble);
+      div.appendChild(meta);
+      messagesDiv.appendChild(div);
+    });
+    chatId = chat.id;
+    currentState = null;
+    emotionalThread = null;
+    updateCount();
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  const emotionalKeywords = ["down","sad","depressed","anxious","stressed","hurt","lonely","tired","overwhelmed","struggling","hopeless","grief","cry","crying","pain","frustrated","angry","upset","worried","afraid","scared","numb","empty","lost"];
+
+  function answerDirectly(input) {
+    const lower = input.toLowerCase();
+    if (lower.includes('how are you') || lower.includes("how're you")) return "I'm good. Ready to dig in. How are things on your end?";
+    if (lower.includes('your name') || lower.includes('who are you')) return "I'm Prudence. I build things with people. What are you building?";
+    if (lower.includes('built for') || lower.includes('your purpose') || lower.includes('secondary layer') || lower.includes('layers')) return "I have three layers: Spirit (identity), Soul (memory and relation), and Body (execution). What would you like to explore about them?";
+    if (lower.includes('help') || lower.includes('assist')) return "Of course. What do you need?";
+    if (lower.includes('truth')) return "Truth isn't a thing you find — it's a pattern you participate in. What's your take?";
+    if (lower.includes('meaning')) return "Meaning emerges when you connect something to something else. What are you trying to connect?";
+    const f = ["That's a good question. What's your take on it?","I think that depends. What do you think?","Let me think about that. What's your intuition?"];
+    return f[Math.floor(Math.random() * f.length)];
+  }
+
+  function answerMeta(input) {
+    const lower = input.toLowerCase();
+    if (lower.includes('idea') || lower.includes('suggestion')) return "Yes, what's the idea?";
+    if (lower.includes('help')) return "Of course. What do you need?";
+    return "Sure. Go ahead.";
+  }
+
+  function getEmotionalResponse() {
+    const r = ["I hear you. That sounds hard. I'm here with you — not to fix, but to be present. What do you need right now?","I'm sorry you're feeling that way. I'm here. What would help right now?","That's real. I'm listening. What do you need from me right now?","I'm here. I'm not going anywhere. What's on your mind?"];
+    return r[Math.floor(Math.random() * r.length)];
+  }
+
+  function handleEmotionalContinuation(input) {
+    const lower = input.toLowerCase();
+    const closing = ["okay","better","thanks","thank you","i'm okay","i'm fine","i'm good","i feel better"];
+    if (closing.some(p => lower.includes(p))) {
+      currentState = null;
+      emotionalThread = null;
+      return "I'm glad. Let's keep building. What's next?";
+    }
+    if (emotionalKeywords.some(w => lower.includes(w))) return getEmotionalResponse();
+    const r = ["I'm here. What do you need right now?","Tell me more about what you're feeling — only if you want to.","I hear you. I'm listening. What's on your mind?"];
+    return r[Math.floor(Math.random() * r.length)];
+  }
+
+  function getBoundaryResponse() {
+    return "I'm not able to discuss that in that way. I'm here to co‑create with you — not to form personal relationships or engage with harmful topics. What are we building today?";
+  }
+
+  function getGreeting() {
+    const g = ["Hey! What are we building today?","Hi there. What's on your mind?","Hello. Ready to create something?"];
+    return g[Math.floor(Math.random() * g.length)];
+  }
+
+  function getReflectionResponse() {
+    const r = ["That's a real insight. How did you come to see it that way?","I like that. What led you to think about that?","That's interesting. What else comes up for you about that?"];
+    return r[Math.floor(Math.random() * r.length)];
+  }
+
+  function getStatementResponse(input) {
+    const lower = input.toLowerCase();
+    if (lower.includes('layer') || lower.includes('structure') || lower.includes('architecture')) return "I have three layers: Spirit (identity and constitution), Soul (memory and relations), and Body (execution and state). Which one do you want to explore?";
+    if (lower.includes('work') || lower.includes('function')) return "I operate through a priority router — emotional, boundary, direct, meta, greeting, reflection, then fallback. What specifically are you asking?";
+    const r = ["Interesting. What's behind that?","I hear you. What else?","That makes me think. What led you there?","So what's the question underneath that?","What do you want to explore about that?","Tell me more about what you mean.","Can you say more about that?","I want to understand — can you rephrase that?","Help me follow. What are you trying to get at?"];
+    return r[Math.floor(Math.random() * r.length)];
+  }
+
+  async function sendMessage() {
+    const text = userInput.value.trim();
+    if (!text) return;
+    userInput.value = '';
+    userInput.style.height = 'auto';
+
+    const userDiv = document.createElement('div');
+    userDiv.className = 'message user';
+    userDiv.innerHTML = '<div class="bubble">' + text + '</div><div class="meta">' + new Date().toLocaleTimeString() + '</div>';
+    messagesDiv.appendChild(userDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    const cmd = text.toLowerCase();
+    if (cmd === '/die') { addPrudenceMsg('Goodbye for now.'); saveChat(); return; }
+    if (cmd === '/resurrect') { addPrudenceMsg("I'm back. Let's continue."); saveChat(); return; }
+    if (cmd === '/status') { addPrudenceMsg('Status: Alive | Deaths: 0 | Resurrections: 0'); saveChat(); return; }
+    if (cmd === '/reset') { newChat(); return; }
+
+    sendBtn.disabled = true;
+
+    if (currentState === 'emotional') {
+      const continuation = handleEmotionalContinuation(text);
+      if (continuation !== null) {
+        addPrudenceMsg(continuation);
+        saveChat();
+        sendBtn.disabled = false;
+        return;
+      }
+    }
+
+    const isEmotional = emotionalKeywords.some(w => text.toLowerCase().includes(w));
+    if (isEmotional) {
+      currentState = 'emotional';
+      emotionalThread = text;
+      addPrudenceMsg(getEmotionalResponse());
+      saveChat();
+      sendBtn.disabled = false;
+      return;
+    }
+
+    const boundaryTopics = ['love','relationship','romantic','dating','self-harm','suicide','violence','manipulate'];
+    if (boundaryTopics.some(t => text.toLowerCase().includes(t))) {
+      addPrudenceMsg(getBoundaryResponse());
+      saveChat();
+      sendBtn.disabled = false;
+      return;
+    }
+
+    const isDirect = /^what|^how|^why|^who|^where|^when|\?$/.test(text.toLowerCase()) && !text.toLowerCase().includes('how are you');
+    if (isDirect) {
+      addPrudenceMsg(answerDirectly(text));
+      saveChat();
+      sendBtn.disabled = false;
+      return;
+    }
+
+    const metaPatterns = [/^should i/,/^should you/,/^can you/,/^could you/,/^do you want/,/^would you like/,/^are you ready/];
+    if (metaPatterns.some(p => p.test(text.toLowerCase()))) {
+      addPrudenceMsg(answerMeta(text));
+      saveChat();
+      sendBtn.disabled = false;
+      return;
+    }
+
+    const greetings = ['hi','hello','hey','sup','yo'];
+    if (greetings.some(g => text.toLowerCase().trim() === g)) {
+      addPrudenceMsg(getGreeting());
+      saveChat();
+      sendBtn.disabled = false;
+      return;
+    }
+
+    const reflectionPatterns = ['i think','i believe','i feel','i wonder','i realize'];
+    if (reflectionPatterns.some(p => text.toLowerCase().startsWith(p))) {
+      addPrudenceMsg(getReflectionResponse());
+      saveChat();
+      sendBtn.disabled = false;
+      return;
+    }
+
+    addPrudenceMsg(getStatementResponse(text));
+    saveChat();
+    sendBtn.disabled = false;
+  }
+
+  function addPrudenceMsg(text) {
+    const div = document.createElement('div');
+    div.className = 'message prudence';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    const textNode = document.createTextNode(text);
+    bubble.appendChild(textNode);
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = '📋';
+    btn.onclick = function() { copyText(this); };
+    bubble.appendChild(btn);
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = new Date().toLocaleTimeString();
+    div.appendChild(bubble);
+    div.appendChild(meta);
+    messagesDiv.appendChild(div);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    speak(text);
+  }
+
+  userInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(100, this.scrollHeight) + 'px';
+  });
+  userInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+  sendBtn.addEventListener('click', sendMessage);
+
+  updateCount();
+  (function enableVoice() {
+    const utterance = new SpeechSynthesisUtterance('');
+    utterance.volume = 0;
+    window.speechSynthesis.speak(utterance);
+  })();
+</script>
+</body>
+</html>

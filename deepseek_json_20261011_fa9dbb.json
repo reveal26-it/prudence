@@ -1,0 +1,16 @@
+{
+  "name": "Prudence",
+  "short_name": "Prudence",
+  "description": "Triune Cognitive Assistant",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f5f3f0",
+  "theme_color": "#1a1a1a",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='60' fill='%231a1a1a'/%3E%3Ccircle cx='256' cy='180' r='40' fill='%23c0392b'/%3E%3Ccircle cx='180' cy='320' r='40' fill='white'/%3E%3Ccircle cx='332' cy='320' r='40' fill='white'/%3E%3C/svg%3E",
+      "type": "image/svg+xml",
+      "sizes": "512x512"
+    }
+  ]
+}
